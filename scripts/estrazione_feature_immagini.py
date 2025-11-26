@@ -9,7 +9,7 @@ DATASET_MODIFICATO=PROJECT_ROOT/"dataset"/"dataset_modificato.csv"
 def main():
     df=pd.read_csv(DATASET_ORIGINALE)
 
-    #modifiche...
+    df["colonna_test"] = "CIAO"
     
 
     df.to_csv(DATASET_MODIFICATO)

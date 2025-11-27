@@ -1,9 +1,8 @@
-library(here)
-# Risalgo di un livello dalla cartella R/
-PROJECT_ROOT <- here::here("..")
+# Risalgo di due livelli dalla cartella R
+PROJECT_ROOT <- normalizePath("../../", winslash = "/")
 
-# Percorso della cartella dataset
-DATA <- file.path(PROJECT_ROOT, 
+# Percorso cartella dataset
+DATA <- file.path(PROJECT_ROOT,
                   "dataset",
                   "NDB-UFES An oral cancer and leukoplakia dataset composed of histopathological images and patient data")
 

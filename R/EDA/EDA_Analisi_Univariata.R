@@ -6,11 +6,11 @@ PROJECT_ROOT <- normalizePath("../../../", winslash = "/")
 
 # Percorso cartella dataset
 DATA <- file.path(PROJECT_ROOT,
-                  "dataset",
-                  "NDB-UFES An oral cancer and leukoplakia dataset composed of histopathological images and patient data")
+                  "dataset")
+
 
 # Percorso completo del CSV
-DATASET_ORIGINALE <- file.path(DATA, "ndb-ufes.csv")
+DATASET_ORIGINALE <- file.path(DATA, "dataset_modificato.csv")
 
 # Caricamento dataset
 df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
@@ -22,7 +22,12 @@ df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
 #Calcolo di variabili statistiche: Media, mediana, min e max, quartili
 #deviazione standard
   variabili_numeriche <- c ("larger_size")
-  
+  #ordino la variabile age_group
+  df$age_group <- factor(
+    df$age_group,
+    levels = c("Young", "Middle", "Elderly"),  # ordine che vuoi
+    ordered = TRUE
+  )
   
   for(variabile in variabili_numeriche){
     cat("\n-----", variabile, "-----\n")
@@ -86,15 +91,31 @@ df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
   }
   
   #Barplot per visualizzare la distribuzione
+  op <- par(mar = c(9, 4, 4, 2), xpd = NA)
+  
   for (variabile in variabili_categoriali) {
-    freq <- table(df[[variabile]])          
-    max_y <- max(freq) * 1.4                
+    freq  <- table(df[[variabile]])
+    max_y <- max(freq) * 1.4
     
-    barplot(freq,
-            main = paste("Barplot di", variabile),
-            las  = 2,
-            col  = "skyblue",
-            ylim = c(0, max_y))             
+    # etichette mandate a capo se troppo lunghe
+    lab_wrapped <- sapply(names(freq), function(x)
+      paste(strwrap(x, width = 7), collapse = "\n")
+    )
+    
+    # barplot SENZA etichette sull’asse x
+    bp <- barplot(freq,
+                  main = paste("Barplot di", variabile),
+                  col  = "skyblue",
+                  ylim = c(0, max_y),
+                  xaxt = "n",   # niente nomi sull'asse x
+                  las  = 1)     # solo l’asse y orizzontale
+    
+    # aggiungo le etichette più in basso
+    text(x      = bp,
+         y      = -max_y * 0.12,   # sposta più o meno in basso (puoi regolare 0.12)
+         labels = lab_wrapped,
+         cex    = 0.8,
+         adj    = c(0.5, 1))
   }
   
   #ricostruisco i barplot e le tabelle per le variabili che contengono not informed rimuovendolo
@@ -115,13 +136,14 @@ df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
     
     barplot(freq_senza_NI,
             main = paste("Barplot di", variabile, "senza Not informed"),
-            las  = 2,
+            las  = 1,
             col  = "skyblue",
             ylim = c(0, max_y))
   }
   
   
-  #Gestione delle stringhe vuote in "dysplasia_severity"
+  
+  
   df$dysplasia_severity[df$dysplasia_severity == ""] <- NA
   #ricostruisco barplot e analisi per dysplasia_severity senza considerare i valori NA
   cat("\n-----dysplasia_severity senza NA-----\n")
@@ -136,6 +158,6 @@ df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
   
   barplot(table_modificata,
           main = paste("Barplot di dysplasia_severity senza NA"),
-          las  = 2,
+          las  = 1,
           col  = "skyblue",
           ylim = c(0, max_y))

@@ -10,7 +10,7 @@ DATASET_MODIFICATO = PROJECT_ROOT / "dataset" / "dataset_modificato.csv"
 PERCORSO_IMMAGINI = DATA / "images"
 DATASET_CARTELLA= PROJECT_ROOT/"dataset"
 
-CARTELLA_PATCH = DATASET_CARTELLA/"patches"                    # cartella dove salveremo le patch
+CARTELLA_PATCH = DATASET_CARTELLA/"patches4"                    # cartella dove salveremo le patch
 
 PATCH_SIZE = 256   # lato patch (in pixel), cambia se vuoi (es. 512)
 STRIDE = 256       # passo griglia; = PATCH_SIZE → patch non sovrapposte
@@ -49,27 +49,37 @@ for idx, row in df_img.iterrows():
 
     base_name = os.path.splitext(os.path.basename(orig_image_path))[0]
 
-    # Scorro l'immagine con una griglia PATCH_SIZE x PATCH_SIZE
-    for y in range(0, h - PATCH_SIZE + 1, STRIDE):
-        for x in range(0, w - PATCH_SIZE + 1, STRIDE):
-            patch = img[y:y+PATCH_SIZE, x:x+PATCH_SIZE]
+    # Calcolo metà altezza e metà larghezza
+    h_mid = h // 2
+    w_mid = w // 2
 
-            # QUI NON SCARTIAMO NIENTE: ogni patch viene salvata
-            patch_name = f"{base_name}_y{y}_x{x}.png"
-            patch_path = os.path.join(CARTELLA_PATCH, patch_name)
+    # Definisco i 4 quadranti (y1, y2, x1, x2, etichetta)
+    quadrants = [
+        (0,      h_mid, 0,      w_mid,  "top_left"),
+        (0,      h_mid, w_mid,  w,      "top_right"),
+        (h_mid,  h,     0,      w_mid,  "bottom_left"),
+        (h_mid,  h,     w_mid,  w,      "bottom_right"),
+    ]
 
-            cv2.imwrite(patch_path, patch)
-            patch_counter += 1
+    for (y1, y2, x1, x2, label) in quadrants:
+        patch = img[y1:y2, x1:x2]
 
-            patch_rows.append({
-                "patch_path": patch_path,
-                "orig_image_path": orig_image_path
-            })
+        patch_name = f"{base_name}_{label}.png"
+        patch_path = os.path.join(CARTELLA_PATCH, patch_name)
+
+        cv2.imwrite(patch_path, patch)
+        patch_counter += 1
+
+        patch_rows.append({
+            "patch_path": patch_path,
+            "orig_image_path": orig_image_path
+        })
+
 
 print(f"Numero totale di patch salvate: {patch_counter}")
 
 # === SALVO IL CSV MINIMALE ===
 
 df_patches_min = pd.DataFrame(patch_rows)
-df_patches_min.to_csv(os.path.join(DATASET_CARTELLA,"patches.csv"), index=False)
+df_patches_min.to_csv(os.path.join(DATASET_CARTELLA,"patches_4.csv"), index=False)
 print("Salvato patch_index_minimo.csv con forma:", df_patches_min.shape)

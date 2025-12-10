@@ -17,7 +17,7 @@ library(dplyr)
 
 #UNDERSTANDING
 
-  #Visualizzo la struttura del dataset 
+  #Visualizzo la struttura del dataset
   cat("\nStruttura del dataset\n")
   str(df)
   

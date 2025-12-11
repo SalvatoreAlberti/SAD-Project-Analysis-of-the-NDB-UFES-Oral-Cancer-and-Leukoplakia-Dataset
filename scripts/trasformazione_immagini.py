@@ -50,7 +50,7 @@ for i, row in df.iterrows():
     # Creo un nome file di output, ad esempio aggiungendo il suffisso '_hematoxylin'
     original_name = Path(relative_path).name           # es: "immagine1.png"
     stem = Path(original_name).stem                    # "immagine1"
-    out_name = f"{stem}_hematoxylin.png"               # "immagine1_hematoxylin.png"
+    out_name = f"{stem}.png"               # "immagine1_hematoxylin.png"
     out_path = IMMAGINI_TRASFORMATE / out_name
 
     cv2.imwrite(str(out_path), hematoxylin_norm)

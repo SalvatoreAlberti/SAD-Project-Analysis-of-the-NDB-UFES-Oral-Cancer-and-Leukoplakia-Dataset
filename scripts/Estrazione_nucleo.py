@@ -1,5 +1,6 @@
 import os
 import csv
+from pathlib import Path
 from inference_sdk import InferenceHTTPClient
 
 # ============================
@@ -11,10 +12,13 @@ API_KEY = "fu4TuA4WUwHtEumvOagj"
 WORKSPACE = "salvatore-zfksp"
 WORKFLOW_ID = "custom-workflow"
 
-IMAGES_FOLDER = "C:/Users/Alber/Desktop/Magistrale/Statistica ed Analisi dei Dati/Progetto SAD/dataset/immagini_trasformate"
+BASE_DIR = Path(__file__).resolve().parent.parent  # es: Progetto_SAD/
 
-CSV_ORIGINALE = "C:/Users/Alber/Desktop/Magistrale/Statistica ed Analisi dei Dati/Progetto SAD/dataset/NDB-UFES An oral cancer and leukoplakia dataset composed of histopathological images and patient data/ndb-ufes.csv"
-CSV_MODIFICATO = "C:/Users/Alber/Desktop/Magistrale/Statistica ed Analisi dei Dati/Progetto SAD/dataset_modificato.csv"
+DATASET_DIR = BASE_DIR.parent / "dataset"
+
+IMAGES_FOLDER = DATASET_DIR / "immagini_trasformate"
+CSV_ORIGINALE = DATASET_DIR / "NDB-UFES An oral cancer and leukoplakia dataset composed of histopathological images and patient data/ndb-ufes.csv"
+CSV_MODIFICATO = BASE_DIR.parent / "dataset_modificato.csv"
 
 # ============================
 # 1. ESEGUI IL MODELLO SU TUTTE LE IMMAGINI

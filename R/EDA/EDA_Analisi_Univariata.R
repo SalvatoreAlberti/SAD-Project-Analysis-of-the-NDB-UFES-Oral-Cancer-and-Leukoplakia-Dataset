@@ -3,7 +3,6 @@ library(dplyr)
 #CARICAMENTO DEL DATASET
 # Risalgo di due livelli dalla cartella R
 PROJECT_ROOT <- normalizePath("../../../", winslash = "/")
-getwd()
 # Percorso cartella dataset
 DATA <- file.path(PROJECT_ROOT,
                   "dataset") 

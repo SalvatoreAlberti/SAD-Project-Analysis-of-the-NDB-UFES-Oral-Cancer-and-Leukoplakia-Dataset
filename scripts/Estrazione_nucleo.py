@@ -3,14 +3,11 @@ import csv
 from pathlib import Path
 from inference_sdk import InferenceHTTPClient
 
-# ============================
-# CONFIGURAZIONI
-# ============================
 
 API_URL = "https://serverless.roboflow.com"
 API_KEY = "fu4TuA4WUwHtEumvOagj"
 WORKSPACE = "salvatore-zfksp"
-WORKFLOW_ID = "custom-workflow"
+WORKFLOW_ID = "custom-workflow-2"
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # es: Progetto_SAD/
 
@@ -20,9 +17,7 @@ IMAGES_FOLDER = DATASET_DIR / "immagini_trasformate"
 CSV_ORIGINALE = DATASET_DIR / "NDB-UFES An oral cancer and leukoplakia dataset composed of histopathological images and patient data/ndb-ufes.csv"
 CSV_MODIFICATO = BASE_DIR.parent / "dataset_nuclei.csv"
 
-# ============================
 # 1. ESEGUI IL MODELLO SU TUTTE LE IMMAGINI
-# ============================
 
 client = InferenceHTTPClient(
     api_url=API_URL,
@@ -64,9 +59,7 @@ for img_name in image_files:
 
     print(f"{img_name}: {count} nuclei trovati")
     
-# ============================
 # 2. CREA IL NUOVO CSV MODIFICATO
-# ============================
 
 with open(CSV_ORIGINALE, newline="", encoding="utf-8") as infile, \
      open(CSV_MODIFICATO, "w", newline="", encoding="utf-8") as outfile:

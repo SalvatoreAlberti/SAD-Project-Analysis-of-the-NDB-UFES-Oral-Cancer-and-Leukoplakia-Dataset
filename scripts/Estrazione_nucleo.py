@@ -18,7 +18,7 @@ DATASET_DIR = BASE_DIR.parent / "dataset"
 
 IMAGES_FOLDER = DATASET_DIR / "immagini_trasformate"
 CSV_ORIGINALE = DATASET_DIR / "NDB-UFES An oral cancer and leukoplakia dataset composed of histopathological images and patient data/ndb-ufes.csv"
-CSV_MODIFICATO = BASE_DIR.parent / "dataset_modificato.csv"
+CSV_MODIFICATO = BASE_DIR.parent / "dataset_nuclei.csv"
 
 # ============================
 # 1. ESEGUI IL MODELLO SU TUTTE LE IMMAGINI
@@ -58,10 +58,12 @@ for img_name in image_files:
 
     # Conta nuclei
     count = len(predictions)
-    risultati_modello[img_name] = count
+    key = Path(img_name).stem.split("_")[0]  # "0000" da "0000_hematoxylin.png"
+    risultati_modello[key] = count
+
 
     print(f"{img_name}: {count} nuclei trovati")
-
+    
 # ============================
 # 2. CREA IL NUOVO CSV MODIFICATO
 # ============================
@@ -79,10 +81,10 @@ with open(CSV_ORIGINALE, newline="", encoding="utf-8") as infile, \
 
     for row in reader:
         # Estrai SOLO il nome file dalla colonna path
-        nome_file = os.path.basename(row["path"])
-
-        # Trova il numero di nuclei corrispondente
-        row["numero_nuclei"] = risultati_modello.get(nome_file, None)
+        key_csv = Path(row["path"]).stem         # "0000" da "0000.png"
+        row["numero_nuclei"] = risultati_modello.get(key_csv, "")
+        if row["numero_nuclei"] == "":
+            print("NON TROVATO:", row["path"])
 
         writer.writerow(row)
 

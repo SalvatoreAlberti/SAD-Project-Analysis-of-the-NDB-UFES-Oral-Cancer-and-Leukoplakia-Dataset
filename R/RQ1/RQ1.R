@@ -1,35 +1,27 @@
-library(tidyverse)
+
 
 
 PROJECT_ROOT <- normalizePath("../../../", winslash = "/")
-# Percorso cartella dataset
-DATA <- file.path(PROJECT_ROOT,
-                  "dataset") 
-
-
-# Percorso completo del CSV
+DATA <- file.path(PROJECT_ROOT, "dataset") 
 DATASET_ORIGINALE <- file.path(DATA, "dataset_modificato.csv")
 
-X <- as.matrix(df[, pc_cols])
-dim(X)   # n_immagini x 90
-# controlla che siano pc1, pc2, ...
-df_pc <- df %>%
-  select(all_of(pc_cols)) %>%
-  mutate(across(everything(), ~ as.numeric(.)))
-pc_classes <- sapply(df[, pc_cols], class)
-pc_classes[pc_classes == "character"]
+df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
 
-wss <- c()
-k_range <- 2:10
+# 1️⃣ scelgo la colonna da codificare
+col_da_onehot <- "localization"   # metti qui il nome che ti interessa
 
-for (k in k_range) {
-  km <- kmeans(X, centers = k, nstart = 25)
-  wss <- c(wss, km$tot.withinss)
-}
+# (opzionale ma consigliato) mi assicuro che sia factor
+df[[col_da_onehot]] <- as.factor(df[[col_da_onehot]])
 
-plot(k_range, wss, type = "b",
-     xlab = "Numero di cluster k",
-     ylab = "Tot within-cluster sum of squares",
-     main = "Metodo del gomito (PCA features)")
+# 2️⃣ faccio il one-hot SOLO su quella colonna
+dummies <- model.matrix(~ get(col_da_onehot) - 1, data = df)
 
+# rinomino le colonne in modo carino (togliendo "get(col_da_onehot)" dal nome)
+colnames(dummies) <- sub("get\\(col_da_onehot\\)", col_da_onehot, colnames(dummies))
 
+# 3️⃣ tolgo la colonna originale dal df
+df_senza_col <- df[ , setdiff(names(df), col_da_onehot)]
+
+# 4️⃣ ricompongo il data frame: tutto uguale + colonne one-hot
+df_onehot <- cbind(df_senza_col, dummies)
+df_onehot

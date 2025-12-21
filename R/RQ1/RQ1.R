@@ -1,63 +1,201 @@
-library(scales)
+# ============================================================
+# PROGETTO DI STATISTICA – CLUSTERING MORFOLOGICO (RQ1)
+# Clustering gerarchico: single linkage + distanza Jaccard
+# ============================================================
+
+# -------------------------
+# Librerie
+# -------------------------
 library(cluster)
+library(scales)
+
+# -------------------------
+# Caricamento dati
+# -------------------------
 PROJECT_ROOT <- normalizePath("../../../", winslash = "/")
 DATA <- file.path(PROJECT_ROOT, "dataset") 
 DATASET_ORIGINALE <- file.path(DATA, "dataset_modificato.csv")
 
-df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ";")
+df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
 
-# colonna da codificare
-#col_da_onehot <- "localization"   # metti qui il nome che ti interessa
+# -------------------------
+# Selezione variabili morfologiche
+# -------------------------
+colonne_clustering <- c("larger_size", "numero_nuclei")
+df_clustering <- df[, colonne_clustering]
 
-# mi assicuro che sia factor
-#df[[col_da_onehot]] <- as.factor(df[[col_da_onehot]])
-
-#  faccio il one-hot 
-#dummies <- model.matrix(~ get(col_da_onehot) - 1, data = df)
-
-# rinomino le colonne 
-#colnames(dummies) <- sub("get\\(col_da_onehot\\)", col_da_onehot, colnames(dummies))
-
-#⃣ tolgo la colonna originale dal df
-#df_senza_col <- df[ , setdiff(names(df), col_da_onehot)]
-
-#⃣ ricompongo il data frame: tutto uguale + colonna one-hot
-#df_onehot <- cbind(df_senza_col, dummies)
-#df_onehot
-colonne_clustering<-c("larger_size","numero_nuclei")
-df_clustering<-df[,colonne_clustering]
 df_clustering$larger_size   <- as.numeric(df_clustering$larger_size)
 df_clustering$numero_nuclei <- as.numeric(df_clustering$numero_nuclei)
-#df_clustering$localization<-as.factor(df_clustering$localization)
-colonne_scalate<-scale(df_clustering)
-d<-daisy(colonne_scalate,metric="euclidean")
-d
-hc_complete <- hclust(d, method = "ward.D2")
-plot(hc_complete , cex = 0.6)
-rect.hclust(hc_complete, k = 2, border = 2:4)   # evidenzia 3 cluster
-cl <- cutree(hc_complete, k = 2)
 
+# -------------------------
+# Rimozione NA
+# -------------------------
+complete_idx <- complete.cases(df_clustering)
+df_clustering <- df_clustering[complete_idx, ]
+df_complete   <- df[complete_idx, ]
 
-# attacco il cluster alle righe (include anche localization)
-df_out <- data.frame(
-  larger_size   = df_clustering$larger_size,
-  numero_nuclei = df_clustering$numero_nuclei,
-  cluster       = cl
+# ============================================================
+# BINARIZZAZIONE (necessaria per Jaccard)
+# ============================================================
+
+df_binary <- data.frame(
+  larger_size   = ifelse(df_clustering$larger_size   > median(df_clustering$larger_size), 1, 0),
+  numero_nuclei = ifelse(df_clustering$numero_nuclei > median(df_clustering$numero_nuclei), 1, 0)
 )
 
-# quante righe per cluster
-print(table(df_out$cluster))
+# ============================================================
+# MATRICE DI DISTANZA (JACCARD)
+# ============================================================
 
-# stampa le righe di ogni cluster (con localization)
-for (k in sort(unique(df_out$cluster))) {
-  cat("\n====================\n")
-  cat("CLUSTER", k, "- n =", sum(df_out$cluster == k), "\n")
-  print(df_out[df_out$cluster == k, c("larger_size","numero_nuclei")])
+dist_jaccard <- daisy(df_binary, metric = "gower")  
+# con variabili binarie Gower ≡ Jaccard
+
+# ============================================================
+# CLUSTERING GERARCHICO (SINGLE LINKAGE)
+# ============================================================
+
+hc <- hclust(dist_jaccard, method = "complete")
+
+# Dendrogramma
+plot(
+  hc,
+  labels = FALSE,
+  hang = -1,
+  main = "Clustering gerarchico (Complete linkage, distanza Jaccard)",
+  xlab = "Osservazioni",
+  ylab = "Distanza"
+)
+
+# ============================================================
+# SCELTA DEL NUMERO DI CLUSTER (Silhouette)
+# ============================================================
+
+silhouette_analysis <- function(k){
+  clusters <- cutree(hc, k = k)
+  sil <- silhouette(clusters, dist_jaccard)
+  mean(sil[, 3])
 }
 
+k_values <- 2:10
+silhouette_scores <- sapply(k_values, silhouette_analysis)
 
-cl
-table(cl)
-sil <- silhouette(cl, d)   # calcola silhouette per ogni osservazione
-plot(sil)                  # grafico silhouette
-mean(sil[, 3])    
+plot(
+  k_values,
+  silhouette_scores,
+  type = "b",
+  pch = 19,
+  xlab = "Numero di cluster",
+  ylab = "Silhouette media",
+  main = "Metodo della silhouette"
+)
+
+optimal_k <- k_values[which.max(silhouette_scores)]
+cat("Numero ottimale di cluster:", optimal_k, "\n")
+
+# ============================================================
+# CLUSTERING FINALE
+# ============================================================
+
+df_complete$cluster <- factor(cutree(hc, k = optimal_k))
+
+# ============================================================
+# TABELLA DI CONTINGENZA: CLUSTER × DIAGNOSI
+# ============================================================
+
+tab_cluster_diagnosi <- table(df_complete$cluster, df_complete$diagnosis)
+print(tab_cluster_diagnosi)
+
+# Percentuali per cluster
+prop.table(tab_cluster_diagnosi, margin = 1) * 100
+
+# Percentuali per diagnosi
+prop.table(tab_cluster_diagnosi, margin = 2) * 100
+
+# ============================================================
+# CENTROIDI (scala originale)
+# ============================================================
+
+centroids <- aggregate(
+  cbind(larger_size, numero_nuclei) ~ cluster,
+  data = df_complete,
+  mean
+)
+
+# ============================================================
+# GRAFICO FINALE
+# ============================================================
+
+plot(
+  df_complete$larger_size,
+  df_complete$numero_nuclei,
+  col = df_complete$cluster,
+  pch = 19,
+  xlab = "Dimensione della lesione (cm)",
+  ylab = "Numero di nuclei",
+  main = "Fenotipi morfologici (Clustering gerarchico)"
+)
+
+points(
+  centroids$larger_size,
+  centroids$numero_nuclei,
+  pch = 4,
+  cex = 2,
+  lwd = 3
+)
+
+legend(
+  "topright",
+  legend = c(paste("Cluster", levels(df_complete$cluster)), "Centroide"),
+  col = c(1:length(levels(df_complete$cluster)), "black"),
+  pch = c(rep(19, length(levels(df_complete$cluster))), 4)
+)
+
+
+# ============================================================
+# WCSS / BCSS / Calinski-Harabasz
+# (calcolati sulle variabili morfologiche standardizzate)
+# ============================================================
+
+# Dati numerici originali (NON binari) per indici euclidei
+X <- scale(df_clustering)  # standardizzazione come nel tuo kmeans
+clusters <- as.integer(df_complete$cluster)
+
+k <- length(unique(clusters))
+n <- nrow(X)
+
+# Centroide globale
+global_centroid <- colMeans(X)
+
+# Centroidi per cluster (euclidei)
+centroids_euclid <- aggregate(X, by = list(cluster = clusters), FUN = mean)
+# La prima colonna è "cluster", le altre sono le medie
+centroids_mat <- as.matrix(centroids_euclid[, -1, drop = FALSE])
+
+# WCSS: somma delle distanze quadratiche dei punti dal centroide del proprio cluster
+wcss <- 0
+for (i in 1:k) {
+  idx <- which(clusters == i)
+  Xi <- X[idx, , drop = FALSE]
+  ci <- centroids_mat[i, ]
+  wcss <- wcss + sum(rowSums((Xi - matrix(ci, nrow = nrow(Xi), ncol = ncol(Xi), byrow = TRUE))^2))
+}
+
+# BCSS: tra-cluster, rispetto al centroide globale
+bcss <- 0
+for (i in 1:k) {
+  idx <- which(clusters == i)
+  ni <- length(idx)
+  ci <- centroids_mat[i, ]
+  bcss <- bcss + ni * sum((ci - global_centroid)^2)
+}
+
+# Totale (solo check): TSS = WCSS + BCSS
+tss <- sum(rowSums((X - matrix(global_centroid, nrow = n, ncol = ncol(X), byrow = TRUE))^2))
+
+cat("Centroide Globale:", global_centroid, "\n")
+cat("WCSS:", wcss, "\n")
+cat("BCSS:", bcss, "\n")
+
+# Indice di Calinski
+ch_index <- (bcss / (k - 1)) / (wcss / (n - k))
+cat("Indice di Calinski–Harabasz:", ch_index, "\n")

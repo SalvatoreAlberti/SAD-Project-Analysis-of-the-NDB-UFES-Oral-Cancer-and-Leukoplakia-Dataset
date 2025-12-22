@@ -180,7 +180,8 @@ for (v in cat_vars) {
   # se c'è meno di 2 gruppi, salto
   if (nrow(tmp) == 0 || length(unique(tmp$g)) < 2) next
   
-  test <- kruskal.test(y ~ g, data = tmp)
+  0
+  .test <- kruskal.test(y ~ g, data = tmp)
   
   kruskal_results <- rbind(
     kruskal_results,

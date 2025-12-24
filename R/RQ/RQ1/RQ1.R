@@ -8,7 +8,7 @@ PROJECT_ROOT <- normalizePath("../../../../", winslash = "/")
 DATA <- file.path(PROJECT_ROOT, "dataset") 
 DATASET_ORIGINALE <- file.path(DATA, "dataset_modificato.csv")
 
-df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
+df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ";")
 
 # Selezione variabili morfologiche
 colonne_clustering <- c("larger_size", "numero_nuclei")

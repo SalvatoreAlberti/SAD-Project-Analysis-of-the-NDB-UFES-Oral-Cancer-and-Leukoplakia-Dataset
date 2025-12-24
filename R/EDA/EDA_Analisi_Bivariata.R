@@ -14,7 +14,7 @@ DATA <- file.path(PROJECT_ROOT, "dataset")
 DATASET_ORIGINALE <- file.path(DATA, "dataset_modificato.csv")
 
 # Caricamento dataset
-df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ",")
+df <- read.csv(DATASET_ORIGINALE, header = TRUE, sep = ";")
 
 # ================================
 # 0. Impostazioni iniziali

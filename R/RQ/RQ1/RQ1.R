@@ -4,7 +4,7 @@ library(cluster)
 library(scales)
 
 # Caricamento dati
-PROJECT_ROOT <- normalizePath("../../../../", winslash = "/")
+PROJECT_ROOT <- normalizePath("../../../", winslash = "/")
 DATA <- file.path(PROJECT_ROOT, "dataset") 
 DATASET_ORIGINALE <- file.path(DATA, "dataset_modificato.csv")
 
@@ -158,14 +158,9 @@ cat("Indice di Calinski–Harabasz:", ch_index, "\n")
 
 # SALVATAGGIO DATASET CON CLUSTER
 
-# Percorso di salvataggio
-DATASET_CLUSTER <- file.path(DATA, "dataset_con_cluster.csv")
+
 
 # Salvataggio del dataset completo con cluster
-write.csv(
-  df_complete,
-  file = DATASET_CLUSTER,
-  row.names = FALSE
-)
+write.csv2(df_complete, DATASET_ORIGINALE, row.names = FALSE)
 
 cat("Dataset con cluster salvato in:", DATASET_CLUSTER, "\n")

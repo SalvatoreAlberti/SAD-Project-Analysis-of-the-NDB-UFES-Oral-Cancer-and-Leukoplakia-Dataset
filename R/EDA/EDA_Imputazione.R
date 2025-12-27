@@ -143,6 +143,11 @@ idx_imp <- Reduce(`|`, lapply(target_cols, function(v) is.na(df_before[[v]])))
 # 3) Stampo solo quelle righe e solo le colonne interessate (più ID se esistono)
 id_cols <- intersect(c("public_id","lesion_id","patient_id","path"), names(df_imp_knn))
 cols_show <- c(id_cols, target_cols)
+if ("dysplasia_severity" %in% names(df_imp_knn)) {
+  df_imp_knn$dysplasia_severity <- trimws(as.character(df_imp_knn$dysplasia_severity))
+  df_imp_knn$dysplasia_severity[df_imp_knn$dysplasia_severity == "" | is.na(df_imp_knn$dysplasia_severity)] <- "No Leukoplakia"
+  df_imp_knn$dysplasia_severity <- as.factor(df_imp_knn$dysplasia_severity)
+}
 
 print(df_imp_knn)
 write.csv2(df_imp_knn, DATASET_ORIGINALE, row.names = FALSE)

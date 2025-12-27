@@ -6,10 +6,9 @@ library(dplyr)
 
 PROJECT_ROOT <- normalizePath("../../../../", winslash = "/")
 DATA <- file.path(PROJECT_ROOT, "dataset")
+DATASET_CLUSTER <- file.path(DATA, "dataset_modificato.csv")
 
-DATASET_CLUSTER <- file.path(DATA, "dataset_con_cluster.csv")
-
-df <- read.csv(DATASET_CLUSTER, header = TRUE, sep = ",")
+df <- read.csv(DATASET_CLUSTER, header = TRUE, sep = ";", stringsAsFactors = FALSE)
 
 # ================================
 # 0. Impostazioni iniziali
@@ -43,100 +42,68 @@ if ("age_group" %in% names(df)) {
   )
 }
 
-# ================================
-# 1. Funzioni statistiche
-# ================================
+#diagnosis, c'è associazione per fisher
+tab <- table(df$cluster, df$diagnosis)
+tab
+test<-chisq.test(tab)
+test$expected
+fisher.test(tab, simulate.p.value = TRUE, B = 20000)
 
-chi_square_safe <- function(x, y) {
-  tab <- table(x, y)
-  
-  if (nrow(tab) < 2 || ncol(tab) < 2 || sum(tab) == 0) {
-    return(list(p_value = NA, chi2 = NA, df = NA, expected_min = NA))
-  }
-  
-  test <- suppressWarnings(chisq.test(tab, correct = FALSE))
-  
-  list(
-    p_value = as.numeric(test$p.value),
-    chi2 = as.numeric(test$statistic),
-    df = as.numeric(test$parameter),
-    expected_min = min(test$expected)
-  )
-}
+#tobacco_use, non c'è associazione per fisher
+tab1<-table(df$cluster, df$tobacco_use)
+tab1
+test1<-chisq.test(tab1)
+test1$expected
+fisher.test(tab1, simulate.p.value = TRUE, B = 20000)
+#alcohol_consumption, non c'è associazione per fisher
+tab2<-table(df$cluster,df$alcohol_consumption)
+tab2
+test2<-chisq.test(tab2)
+test2
+test2$expected
+fisher.test(tab2, simulate.p.value = TRUE, B = 20000)
+#skin_color, non c'è associazione per fisher
+tab3<-table(df$cluster,df$skin_color)
+tab3
+test3<-chisq.test(tab3)
+test3$expected
+fisher.test(tab3, simulate.p.value = TRUE, B = 20000)
+#localization, non c'è associazione per fisher
+tab4<-table(df$cluster,df$localization)
+tab4
+test4<-chisq.test(tab4)
+test4$expected
+fisher.test(tab4, simulate.p.value = TRUE, B = 20000)
 
-cramers_v <- function(x, y) {
-  tab <- table(x, y)
-  
-  if (nrow(tab) < 2 || ncol(tab) < 2 || sum(tab) == 0) return(NA)
-  
-  chi <- suppressWarnings(chisq.test(tab, correct = FALSE))
-  
-  chi2 <- as.numeric(chi$statistic)
-  n <- sum(tab)
-  r <- nrow(tab)
-  k <- ncol(tab)
-  
-  sqrt(chi2 / (n * (min(r, k) - 1)))
-}
+tab5<-table(df$cluster,df$sun_exposure)
+tab5
+test5<-chisq.test(tab5)
+test5$expected
+fisher.test(tab5, simulate.p.value = TRUE, B = 20000)
+#gender, non c'è associazione per chi quadro
+tab6<-table(df$cluster,df$gender)
+tab6
+test6<-chisq.test(tab6)
+test6
+test6$expected
+#age_group, non c'è associazione per fisher
+tab7<-table(df$cluster,df$age_group)
+tab7
+test7<-chisq.test(tab7)
+test7$expected
+fisher.test(tab7, simulate.p.value = TRUE, B = 20000)
+#dysplasia_severity, non c'è associazione per fisher
+tab8<-table(df$cluster, df$dysplasia_severity)
+tab8
+test8<-chisq.test(tab8)
+test8$expected
+fisher.test(tab8, simulate.p.value = TRUE, B = 20000)
 
-# ================================
-# 2. ANALISI RQ2: CLUSTER × VARIABILI
-# ================================
+#forza legame diagnosis
+chi2 <- test$statistic
+n <- sum(tab)
+r <- nrow(tab)
+c <- ncol(tab)
 
-results_rq2 <- data.frame(
-  variable = character(),
-  p_value = numeric(),
-  chi2 = numeric(),
-  df = numeric(),
-  expected_min = numeric(),
-  cramers_v = numeric(),
-  strength = character(),
-  stringsAsFactors = FALSE
-)
-
-for (v in rq2_vars) {
-  
-  tmp <- df[, c(cluster_var, v)]
-  tmp <- tmp[complete.cases(tmp), ]
-  
-  if (nrow(tmp) == 0 || length(unique(tmp[[v]])) < 2) next
-  
-  res <- chi_square_safe(tmp[[cluster_var]], tmp[[v]])
-  v_cr <- cramers_v(tmp[[cluster_var]], tmp[[v]])
-  
-  strength <- NA
-  if (!is.na(v_cr)) {
-    strength <- cut(
-      v_cr,
-      breaks = c(-Inf, 0.1, 0.3, 0.5, Inf),
-      labels = c("assente/debole", "debole", "moderata", "forte")
-    )
-    strength <- as.character(strength)
-  }
-  
-  results_rq2 <- rbind(
-    results_rq2,
-    data.frame(
-      variable = v,
-      p_value = res$p_value,
-      chi2 = res$chi2,
-      df = res$df,
-      expected_min = res$expected_min,
-      cramers_v = v_cr,
-      strength = strength,
-      stringsAsFactors = FALSE
-    )
-  )
-}
-
-# ================================
-# 3. Correzione per confronti multipli
-# ================================
-
-results_rq2$p_adj_fdr <- p.adjust(results_rq2$p_value, method = "fdr")
-
-# Ordino per significatività
-results_rq2 <- results_rq2[order(results_rq2$p_adj_fdr), ]
-
-cat("\n===== RQ2: Associazione tra fenotipi morfologici e fattori clinico-demografici =====\n")
-print(results_rq2)
+cramers_v <- sqrt(chi2 / (n * (min(r, c) - 1)))
+cramers_v

@@ -4,7 +4,7 @@ library(cluster)
 library(scales)
 
 # Caricamento dati
-PROJECT_ROOT <- normalizePath("../../../", winslash = "/")
+PROJECT_ROOT <- normalizePath("../../../../", winslash = "/")
 DATA <- file.path(PROJECT_ROOT, "dataset") 
 DATASET_ORIGINALE <- file.path(DATA, "dataset_modificato.csv")
 

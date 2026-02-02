@@ -15,9 +15,7 @@ CSV_PATH = PROJECT_ROOT / "dataset" / "dataset_modificato.csv"
 SENSITIVE_COLS = ["age_group", "skin_color", "gender"]
 
 
-# -------------------------
-# 1) Preprocessor (NO pipeline)
-# -------------------------
+
 def make_preprocessor(X_train: pd.DataFrame) -> ColumnTransformer:
     num_cols = X_train.select_dtypes(include=["int64", "float64"]).columns.tolist()
     cat_cols = X_train.select_dtypes(include=["object", "bool"]).columns.tolist()
@@ -31,9 +29,6 @@ def make_preprocessor(X_train: pd.DataFrame) -> ColumnTransformer:
     )
 
 
-# -------------------------
-# 2) CKKS context
-# -------------------------
 def make_ckks_context() -> ts.Context:
     ctx = ts.context(
         ts.SCHEME_TYPE.CKKS,
@@ -45,9 +40,7 @@ def make_ckks_context() -> ts.Context:
     return ctx
 
 
-# -------------------------
-# 3) Indici feature sensibili nel vettore preprocessato
-# -------------------------
+
 def get_sensitive_indices(prep_fitted, sensitive_cols):
     feature_names = prep_fitted.get_feature_names_out()
 
@@ -58,20 +51,19 @@ def get_sensitive_indices(prep_fitted, sensitive_cols):
     return sens_idx, nonsens_idx, feature_names
 
 
-# -------------------------
-# 4) Predizione ibrida (solo sensibili cifrate)
-# -------------------------
+
 def predict_hybrid(prep_fitted, classes, W, b, x_raw_row: pd.DataFrame,
                    ctx, sens_idx, nonsens_idx):
     # preprocess (chiaro)
     x = prep_fitted.transform(x_raw_row)
     if hasattr(x, "toarray"):
         x = x.toarray()
-    x = x.astype(np.float64)[0]  # (D,)
+    x = x.astype(np.float64)[0] 
 
     # split
     x_sens = x[sens_idx]
     x_non = x[nonsens_idx]
+    
 
     # cifra solo sensibili
     x_sens_enc = ts.ckks_vector(ctx, x_sens.tolist())
@@ -93,12 +85,10 @@ def predict_hybrid(prep_fitted, classes, W, b, x_raw_row: pd.DataFrame,
     return pred, scores
 
 
-# -------------------------
-# 5) MAIN
-# -------------------------
+
 if __name__ == "__main__":
 
-    # A) Carico dataset
+   
     df = pd.read_csv(CSV_PATH, sep=";")
     y = df["diagnosis"].astype(str)
 
@@ -108,7 +98,7 @@ if __name__ == "__main__":
     ]
     X = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
-    # B) Split
+    
     X_train, X_test, y_train, y_test = train_test_split(
         X, y,
         test_size=0.2,
@@ -116,10 +106,11 @@ if __name__ == "__main__":
         stratify=y
     )
 
-    # C) Fit preprocessor + trasformo train/test
+    
     prep = make_preprocessor(X_train)
     X_train_vec = prep.fit_transform(X_train)
     X_test_vec = prep.transform(X_test)
+    
 
     if hasattr(X_train_vec, "toarray"):
         X_train_vec = X_train_vec.toarray()
@@ -129,15 +120,14 @@ if __name__ == "__main__":
     X_train_vec = X_train_vec.astype(np.float64)
     X_test_vec = X_test_vec.astype(np.float64)
 
-    # D) Fit LogisticRegression OvR (chiaro)
     clf = LogisticRegression(multi_class="ovr", solver="lbfgs", max_iter=5000)
     clf.fit(X_train_vec, y_train)
 
     classes = clf.classes_.tolist()
-    W = clf.coef_.astype(np.float64)        # (K, D)
-    b = clf.intercept_.astype(np.float64)   # (K,)
+    W = clf.coef_.astype(np.float64)       
+    b = clf.intercept_.astype(np.float64)   
 
-    # E) TenSEAL context + indici sensibili
+   
     ctx = make_ckks_context()
     sens_idx, nonsens_idx, feature_names = get_sensitive_indices(prep, SENSITIVE_COLS)
 
@@ -145,7 +135,7 @@ if __name__ == "__main__":
     print("Feature totali:", len(feature_names))
     print("Sensibili:", len(sens_idx), "Non sensibili:", len(nonsens_idx))
 
-    # F) Confronto su 5 istanze
+    # Confronto su 5 istanze
     for idx in random.sample(range(len(X_test)), 5):
         x_one_raw = X_test.iloc[[idx]]
         y_true = y_test.iloc[idx]
@@ -162,4 +152,4 @@ if __name__ == "__main__":
         print("\n--- idx:", idx, "| vero:", y_true, "---")
         print("[A] chiaro (sklearn):", pred_plain)
         print("[B] ibrido (CKKS):  ", pred_hybrid)
-        print("chiaro vs ibrido:", "OK ✅" if pred_plain == pred_hybrid else "DIVERSO ❌")
+        print("chiaro vs ibrido:", "Uguali" if pred_plain == pred_hybrid else "Diversi")
